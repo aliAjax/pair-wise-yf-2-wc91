@@ -4,10 +4,10 @@ import { Trophy, MapPin, Star, Crown, Medal, Award } from 'lucide-react';
 import { useBenchStore } from '@/store/useBenchStore';
 import { calculateComfortScore, getComfortLevel, getComfortColor } from '@/utils/comfort';
 import { MATERIAL_LABELS, SHADE_LABELS } from '@/types';
-import type { Bench } from '@/types';
+import WeightEditor from '@/components/WeightEditor/WeightEditor';
 
 export default function RankingPage() {
-  const { benches, initialize, initialized } = useBenchStore();
+  const { benches, weights, initialize, initialized } = useBenchStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,7 +17,7 @@ export default function RankingPage() {
   }, [initialized, initialize]);
 
   const rankedBenches = [...benches]
-    .sort((a, b) => calculateComfortScore(b) - calculateComfortScore(a))
+    .sort((a, b) => calculateComfortScore(b, weights) - calculateComfortScore(a, weights))
     .map((bench, index) => ({ bench, rank: index + 1 }));
 
   const getRankIcon = (rank: number) => {
@@ -41,13 +41,15 @@ export default function RankingPage() {
           舒适度排行
         </h2>
         <p className="text-ink-light text-sm">
-          综合评分最高的长椅
+          按你的个性化占比加权排序，调整后列表、地图与详情同步重算
         </p>
       </div>
 
+      <WeightEditor />
+
       <div className="space-y-3">
         {rankedBenches.map(({ bench, rank }) => {
-          const comfortScore = calculateComfortScore(bench);
+          const comfortScore = calculateComfortScore(bench, weights);
           const comfortLevel = getComfortLevel(comfortScore);
           const comfortColor = getComfortColor(comfortScore);
 

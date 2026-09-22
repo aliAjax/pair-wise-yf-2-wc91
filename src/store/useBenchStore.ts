@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import type { Bench, BenchExperience, MaterialType, OrientationType, ShadeLevelType, NoiseLevelType, StayDurationType } from '@/types';
-import { loadBenches, saveBenches } from '@/utils/storage';
-import { generateId } from '@/utils/comfort';
+import type { Bench, BenchExperience, MaterialType, OrientationType, ShadeLevelType, NoiseLevelType, ComfortWeights } from '@/types';
+import { loadBenches, saveBenches, loadWeights, saveWeights, clearWeights } from '@/utils/storage';
+import { generateId, DEFAULT_WEIGHTS, isValidWeights } from '@/utils/comfort';
 import { mockBenches } from '@/data/mockBenches';
 
 interface BenchState {
   benches: Bench[];
+  weights: ComfortWeights;
   searchQuery: string;
   materialFilter: MaterialType | null;
   orientationFilter: OrientationType | null;
@@ -16,6 +17,8 @@ interface BenchState {
 
 interface BenchActions {
   initialize: () => void;
+  setWeights: (weights: ComfortWeights) => boolean;
+  resetWeights: () => void;
   setSearchQuery: (query: string) => void;
   setMaterialFilter: (material: MaterialType | null) => void;
   setOrientationFilter: (orientation: OrientationType | null) => void;
@@ -34,6 +37,7 @@ interface BenchActions {
 
 const initialState: BenchState = {
   benches: [],
+  weights: loadWeights(),
   searchQuery: '',
   materialFilter: null,
   orientationFilter: null,
@@ -56,6 +60,19 @@ export const useBenchStore = create<BenchState & BenchActions>((set, get) => ({
   },
 
   setSearchQuery: (query) => set({ searchQuery: query }),
+
+  setWeights: (weights) => {
+    // 越界或总和不为 100 时整次拒绝，原偏好保持不变
+    if (!isValidWeights(weights)) return false;
+    set({ weights });
+    saveWeights(weights);
+    return true;
+  },
+
+  resetWeights: () => {
+    clearWeights();
+    set({ weights: DEFAULT_WEIGHTS });
+  },
   setMaterialFilter: (material) => set({ materialFilter: material }),
   setOrientationFilter: (orientation) => set({ orientationFilter: orientation }),
   setShadeFilter: (shade) => set({ shadeFilter: shade }),

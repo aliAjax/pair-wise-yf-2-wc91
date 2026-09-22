@@ -13,6 +13,14 @@ export interface BenchExperience {
   rating: number;
 }
 
+export interface ComfortWeights {
+  backrest: number;
+  shade: number;
+  noise: number;
+  material: number;
+  rating: number;
+}
+
 export interface Bench {
   id: string;
   name: string;

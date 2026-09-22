@@ -6,7 +6,7 @@ import { calculateComfortScore, getComfortColor } from '@/utils/comfort';
 import type { Bench } from '@/types';
 
 export default function MapPage() {
-  const { benches, initialize, initialized } = useBenchStore();
+  const { benches, weights, initialize, initialized } = useBenchStore();
   const navigate = useNavigate();
   const [hoveredBench, setHoveredBench] = useState<Bench | null>(null);
 
@@ -59,7 +59,7 @@ export default function MapPage() {
 
           {benches.map((bench) => {
             const position = getPositionStyle(bench);
-            const comfortScore = calculateComfortScore(bench);
+            const comfortScore = calculateComfortScore(bench, weights);
             const colorClass = getComfortColor(comfortScore);
             
             return (

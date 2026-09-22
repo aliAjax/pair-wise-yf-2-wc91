@@ -31,7 +31,7 @@ import { calculateComfortScore, getComfortLevel, getComfortColor } from '@/utils
 export default function BenchDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getBenchById, deleteBench, initialize, initialized } = useBenchStore();
+  const { getBenchById, deleteBench, weights, initialize, initialized } = useBenchStore();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
@@ -58,7 +58,7 @@ export default function BenchDetail() {
     );
   }
 
-  const comfortScore = calculateComfortScore(bench);
+  const comfortScore = calculateComfortScore(bench, weights);
   const comfortLevel = getComfortLevel(comfortScore);
   const comfortColor = getComfortColor(comfortScore);
 
