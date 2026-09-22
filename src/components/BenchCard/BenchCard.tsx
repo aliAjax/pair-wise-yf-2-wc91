@@ -4,6 +4,7 @@ import type { Bench } from '@/types';
 import { MATERIAL_LABELS, SHADE_LABELS, NOISE_LABELS, STAY_DURATION_LABELS } from '@/types';
 import Rating from '@/components/Rating/Rating';
 import { calculateComfortScore, getComfortLevel, getComfortColor } from '@/utils/comfort';
+import { useWeightStore } from '@/store/useWeightStore';
 
 interface BenchCardProps {
   bench: Bench;
@@ -12,7 +13,8 @@ interface BenchCardProps {
 
 export default function BenchCard({ bench, index = 0 }: BenchCardProps) {
   const navigate = useNavigate();
-  const comfortScore = calculateComfortScore(bench);
+  const weights = useWeightStore((state) => state.weights);
+  const comfortScore = calculateComfortScore(bench, weights);
   const comfortLevel = getComfortLevel(comfortScore);
   const comfortColor = getComfortColor(comfortScore);
 

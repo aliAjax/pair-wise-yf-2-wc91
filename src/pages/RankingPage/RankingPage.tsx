@@ -1,14 +1,34 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, MapPin, Star, Crown, Medal, Award } from 'lucide-react';
+import { Trophy, MapPin, Star, Crown, Medal, Award, SlidersHorizontal, RotateCcw } from 'lucide-react';
 import { useBenchStore } from '@/store/useBenchStore';
+import { useWeightStore } from '@/store/useWeightStore';
 import { calculateComfortScore, getComfortLevel, getComfortColor } from '@/utils/comfort';
-import { MATERIAL_LABELS, SHADE_LABELS } from '@/types';
-import type { Bench } from '@/types';
+import { MATERIAL_LABELS, SHADE_LABELS, WEIGHT_LABELS, WEIGHT_MIN, WEIGHT_MAX, WEIGHT_TOTAL, DEFAULT_COMFORT_WEIGHTS } from '@/types';
+import type { ComfortWeights } from '@/types';
+
+type WeightDraft = Record<keyof ComfortWeights, string>;
+
+function toDraft(weights: ComfortWeights): WeightDraft {
+  return {
+    backrest: String(weights.backrest),
+    shade: String(weights.shade),
+    noise: String(weights.noise),
+    material: String(weights.material),
+    rating: String(weights.rating),
+  };
+}
+
+const WEIGHT_KEYS: (keyof ComfortWeights)[] = ['backrest', 'shade', 'noise', 'material', 'rating'];
 
 export default function RankingPage() {
   const { benches, initialize, initialized } = useBenchStore();
+  const { weights, setWeights, resetWeights } = useWeightStore();
   const navigate = useNavigate();
+
+  const [draft, setDraft] = useState<WeightDraft>(() => toDraft(weights));
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!initialized) {
@@ -17,8 +37,46 @@ export default function RankingPage() {
   }, [initialized, initialize]);
 
   const rankedBenches = [...benches]
-    .sort((a, b) => calculateComfortScore(b) - calculateComfortScore(a))
+    .sort((a, b) => calculateComfortScore(b, weights) - calculateComfortScore(a, weights))
     .map((bench, index) => ({ bench, rank: index + 1 }));
+
+  const draftNumbers = WEIGHT_KEYS.map((key) => Number(draft[key]));
+  const draftSum = draftNumbers.reduce((sum, n) => sum + (Number.isFinite(n) ? n : 0), 0);
+
+  const handleDraftChange = (key: keyof ComfortWeights, value: string) => {
+    setDraft((prev) => ({ ...prev, [key]: value }));
+    setSaved(false);
+    setError(null);
+  };
+
+  const handleSave = () => {
+    const parsed = {} as ComfortWeights;
+    for (const key of WEIGHT_KEYS) {
+      parsed[key] = Number(draft[key]);
+    }
+    const values = WEIGHT_KEYS.map((key) => parsed[key]);
+    const allInRange = values.every(
+      (v) => Number.isInteger(v) && v >= WEIGHT_MIN && v <= WEIGHT_MAX
+    );
+    const sum = values.reduce((acc, v) => acc + v, 0);
+
+    if (!allInRange || sum !== WEIGHT_TOTAL) {
+      setError(`保存失败：每项占比须为 ${WEIGHT_MIN}–${WEIGHT_MAX} 的整数，且五项总和必须等于 ${WEIGHT_TOTAL}`);
+      setSaved(false);
+      return;
+    }
+
+    setWeights(parsed);
+    setError(null);
+    setSaved(true);
+  };
+
+  const handleReset = () => {
+    resetWeights();
+    setDraft(toDraft(DEFAULT_COMFORT_WEIGHTS));
+    setError(null);
+    setSaved(false);
+  };
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="w-5 h-5 text-yellow-500" />;
@@ -45,9 +103,66 @@ export default function RankingPage() {
         </p>
       </div>
 
+      <div className="paper-texture rounded-xl shadow-paper p-4 border border-deep-brown/5 mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <SlidersHorizontal className="w-4 h-4 text-moss-green" />
+          <h3 className="font-serif font-semibold text-deep-brown">个性化权重</h3>
+          <span className="text-xs text-ink-light ml-auto">
+            当前总和
+            <span className={`ml-1 font-medium ${draftSum === WEIGHT_TOTAL ? 'text-moss-green' : 'text-red-500'}`}>
+              {draftSum}
+            </span>
+            /{WEIGHT_TOTAL}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+          {WEIGHT_KEYS.map((key) => (
+            <label key={key} className="block">
+              <span className="block text-xs text-ink-light mb-1">{WEIGHT_LABELS[key]}</span>
+              <input
+                type="number"
+                min={WEIGHT_MIN}
+                max={WEIGHT_MAX}
+                step={1}
+                value={draft[key]}
+                onChange={(e) => handleDraftChange(key, e.target.value)}
+                className="w-full px-2 py-1.5 rounded-lg bg-white/80 border border-deep-brown/10 text-sm text-deep-brown focus:outline-none focus:ring-2 focus:ring-moss-green/40"
+              />
+            </label>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-moss-green text-white rounded-lg text-sm font-medium hover:bg-moss-light transition-colors shadow-md"
+          >
+            保存权重
+          </button>
+          <button
+            onClick={handleReset}
+            className="flex items-center gap-1.5 px-4 py-2 bg-white/70 text-ink-light rounded-lg text-sm font-medium hover:text-deep-brown hover:bg-white transition-colors border border-deep-brown/10"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            恢复默认
+          </button>
+          <span className="text-xs text-ink-light">
+            每项 {WEIGHT_MIN}–{WEIGHT_MAX}，总和 {WEIGHT_TOTAL}
+          </span>
+        </div>
+
+        {error && (
+          <p className="mt-3 text-sm text-red-500">{error}</p>
+        )}
+        {saved && !error && (
+          <p className="mt-3 text-sm text-moss-green">已保存，排行与全站评分已按新权重重算</p>
+        )}
+      </div>
+
       <div className="space-y-3">
         {rankedBenches.map(({ bench, rank }) => {
-          const comfortScore = calculateComfortScore(bench);
+          const comfortScore = calculateComfortScore(bench, weights);
           const comfortLevel = getComfortLevel(comfortScore);
           const comfortColor = getComfortColor(comfortScore);
 

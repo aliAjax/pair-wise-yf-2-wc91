@@ -5,6 +5,34 @@ export type NoiseLevelType = 'quiet' | 'moderate' | 'noisy';
 export type StayDurationType = 'short' | 'medium' | 'long' | 'verylong';
 export type TimePeriodType = 'morning' | 'noon' | 'afternoon' | 'evening' | 'night';
 
+export interface ComfortWeights {
+  backrest: number;
+  shade: number;
+  noise: number;
+  material: number;
+  rating: number;
+}
+
+export const DEFAULT_COMFORT_WEIGHTS: ComfortWeights = {
+  backrest: 20,
+  shade: 20,
+  noise: 20,
+  material: 15,
+  rating: 25,
+};
+
+export const WEIGHT_LABELS: Record<keyof ComfortWeights, string> = {
+  backrest: '靠背',
+  shade: '遮阴',
+  noise: '噪音',
+  material: '材质',
+  rating: '个人评分',
+};
+
+export const WEIGHT_MIN = 5;
+export const WEIGHT_MAX = 60;
+export const WEIGHT_TOTAL = 100;
+
 export interface BenchExperience {
   id: string;
   benchId: string;

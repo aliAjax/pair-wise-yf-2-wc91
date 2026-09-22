@@ -27,11 +27,13 @@ import {
 import type { TimePeriodType } from '@/types';
 import Rating from '@/components/Rating/Rating';
 import { calculateComfortScore, getComfortLevel, getComfortColor } from '@/utils/comfort';
+import { useWeightStore } from '@/store/useWeightStore';
 
 export default function BenchDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getBenchById, deleteBench, initialize, initialized } = useBenchStore();
+  const weights = useWeightStore((state) => state.weights);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function BenchDetail() {
     );
   }
 
-  const comfortScore = calculateComfortScore(bench);
+  const comfortScore = calculateComfortScore(bench, weights);
   const comfortLevel = getComfortLevel(comfortScore);
   const comfortColor = getComfortColor(comfortScore);
 
